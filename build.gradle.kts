@@ -60,6 +60,7 @@ val orxFeatures = setOf<String>(
 //  "orx-tensorflow",    
 //  "orx-time-operators",
 //  "orx-timer",
+    "orx-envelopes",
 //  "orx-triangulation",
 //  "orx-turtle",
     "orx-video-profiles",

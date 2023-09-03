@@ -1,24 +1,29 @@
 
 import demos.classes.Animation
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extra.color.presets.GREY
+import org.openrndr.extra.envelopes.ADSRTracker
+import org.openrndr.extra.envelopes.Tracker
+import org.openrndr.extra.envelopes.Trigger
 import org.openrndr.extra.gui.GUI
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
 import org.openrndr.math.IntVector2
 import org.openrndr.math.Vector2
 import org.openrndr.panel.ControlManager
-import org.openrndr.panel.elements.button
-import org.openrndr.panel.elements.clicked
-import org.openrndr.panel.elements.textfield
-import org.openrndr.panel.elements.xyPad
+import org.openrndr.panel.elements.*
 import org.openrndr.panel.layout
 import org.openrndr.panel.style.*
 import org.openrndr.panel.styleSheet
 import java.io.File
 
 
+@OptIn(DelicateCoroutinesApi::class)
 fun main() = application {
     configure {
         width = 608
@@ -48,9 +53,6 @@ fun main() = application {
         animArr.forEach { a ->
             a.loadFromJson(File("data/keyframes/keyframes-0.json"))
         }
-
-
-
 
         extend {
             animArr.forEachIndexed { i, a ->

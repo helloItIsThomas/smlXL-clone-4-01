@@ -40,3 +40,34 @@ extend(ScreenRecorder()) {
     maximumDuration =  8.0
 }
 # END
+
+# TIMEOUT TRACKER ONCE
+        val tracker = ADSRTracker(this)
+        tracker.attack = 0.2
+        tracker.decay = 0.2
+        tracker.sustain = 0.8
+        tracker.release = 0.1
+        mouse.buttonDown.listen {
+            println(it.position)
+            tracker.triggerOn()
+            GlobalScope.launch {
+                delay(500)  // Replace with your desired time
+                tracker.triggerOff()
+            }
+        }
+# END
+
+# TRACKER with LISTENER
+        val tracker = ADSRTracker(this)
+        tracker.attack = 0.2
+        tracker.decay = 0.2
+        tracker.sustain = 0.8
+        tracker.release = 0.1
+        mouse.buttonDown.listen {
+            println(it.position)
+            tracker.triggerOn()
+        }
+        mouse.buttonUp.listen {
+            tracker.triggerOff()
+        }
+# END
