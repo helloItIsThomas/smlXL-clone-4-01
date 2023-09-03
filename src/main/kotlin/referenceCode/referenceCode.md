@@ -71,3 +71,34 @@ extend(ScreenRecorder()) {
             tracker.triggerOff()
         }
 # END
+
+# POINT A to B ( interactive animations )
+        val anim = object : Animatable() {
+            var x = 0.0
+            var y = 0.0
+        }
+
+        mouse.buttonDown.listen {
+            anim.apply {
+                ::x.cancel()  // Cancel any ongoing animations
+                ::y.cancel()
+
+                val targetX = mouse.position.x
+                val targetY = mouse.position.y
+                
+                ::x.animate(targetX, 500, Easing.CubicInOut)
+                ::y.animate(targetY, 500, Easing.CubicInOut)
+            }
+        }
+
+
+        extend {
+            anim.updateAnimation()
+        ...etc
+# END
+
+# CHECK PERFORMANCE / SPEED
+            val elapsedTime = measureTimeMillis {
+            }
+            println(elapsedTime)
+# END
