@@ -11,6 +11,7 @@ import org.openrndr.extra.olive.oliveProgram
 import org.openrndr.math.IntVector2
 import org.openrndr.math.Vector2
 import org.openrndr.math.mix
+import org.openrndr.writer
 import java.awt.SystemColor.window
 import java.io.File
 import kotlin.system.measureTimeMillis
@@ -68,22 +69,18 @@ fun main() = application {
                 drawer.fontMap = typeFace.second[0]
                 drawer.text("H", 10.0, 70.0)
             }
-//            drawer.image(rt.colorBuffer(0), 0.0, 0.0, 500.0, 400.0)
-//            drawer.image(rt.colorBuffer(0))
-//            drawer.image(typeFace.second[0].texture, )
-//            drawer.image(typeFace.second[0].texture)
 
-//            writer {
-//                typeFace.first.forEachIndexed { i, e ->
-//                    drawer.fontMap = e
-//                    charArr.forEachIndexed { ii, ee ->
-//                        drawer.pushTransforms()
-//                        drawer.translate(0.0, animArr[ii].pathSlider * 20.0 + 70.0)
-//                        text(ee.toString())
-//                        drawer.popTransforms()
-//                    }
-//                }
-//            }
+            writer {
+                typeFace.first.forEachIndexed { i, e ->
+                    drawer.fontMap = e
+                    charArr.forEachIndexed { ii, ee ->
+                        drawer.pushTransforms()
+                        drawer.translate(0.0, animArr[ii].pathSlider * 20.0 + 70.0)
+                        text(ee.toString())
+                        drawer.popTransforms()
+                    }
+                }
+            }
         }
     }
 }
