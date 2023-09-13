@@ -1,3 +1,25 @@
+# FROM THIS CODE
+            drawer.isolatedWithTarget(rt) {
+                drawer.clear(ColorRGBa.TRANSPARENT)
+                drawer.fill = ColorRGBa.GREEN
+                drawer.stroke = null
+                drawer.fontMap = typeFace.second[0]
+                drawer.text("H", 10.0, 70.0)
+            }
+
+            writer {
+                typeFace.first.forEachIndexed { i, e ->
+                    drawer.fontMap = e
+                    charArr.forEachIndexed { ii, ee ->
+                        drawer.pushTransforms()
+                        drawer.translate(0.0, animArr[ii].pathSlider * 20.0 + 70.0)
+                        text(ee.toString())
+                        drawer.popTransforms()
+                    }
+                }
+            }
+# END
+
 
 
 
@@ -102,3 +124,5 @@ extend(ScreenRecorder()) {
             }
             println(elapsedTime)
 # END
+
+
