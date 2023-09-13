@@ -10,14 +10,13 @@
 #define d_mesh_line 7
 #define d_point 8
 #define d_custom 9
-#define d_primitive d_rectangle
+#define d_primitive d_expansion
 // </primitive-types>
 
 
-uniform sampler2D p_tex0;
-layout(origin_upper_left) in vec4 gl_FragCoord;
 
-// <drawer-uniforms(true, false)> (ShadeStyleGLSL.kt)
+layout(origin_upper_left) in vec4 gl_FragCoord;
+// <drawer-uniforms(true, true)> (ShadeStyleGLSL.kt)
             
 layout(shared) uniform ContextBlock {
     uniform mat4 u_modelNormalMatrix;
@@ -30,17 +29,16 @@ layout(shared) uniform ContextBlock {
     uniform vec2 u_viewDimensions;
 };
             
+layout(shared) uniform StyleBlock {
+    uniform vec4 u_fill;
+    uniform vec4 u_stroke;
+    uniform float u_strokeWeight;
+    uniform float[25] u_colorMatrix;
+};
 // </drawer-uniforms>
-in vec3 va_position;
-in vec3 va_normal;
+in vec2 va_position;
 in vec2 va_texCoord0;
-in vec3 vi_offset;
-in vec2 vi_dimensions;
-in float vi_rotation;
-in vec4 vi_fill;
-in vec4 vi_stroke;
-in float vi_strokeWeight;
-
+in float va_vertexOffset;
 
 // <transform-varying-in> (ShadeStyleGLSL.kt)
 in vec3 v_worldNormal;
@@ -50,49 +48,69 @@ in vec3 v_viewPosition;
 in vec4 v_clipPosition;
 flat in mat4 v_modelNormalMatrix;
 // </transform-varying-in>
+flat in int v_instance;
+uniform float strokeMult;
+uniform float strokeThr;
+uniform float strokeFillFactor;
+uniform sampler2D tex;
+uniform vec4 bounds;
 
+in vec3 v_objectPosition;
+in vec2 v_ftcoord;
 out vec4 o_color;
 
 
-flat in int v_instance;
-in vec3 v_boundsSize;
+
+float strokeMask() {
+	return min(1.0, (1.0-abs(v_ftcoord.x*2.0-1.0))*strokeMult) * min(1.0, v_ftcoord.y);
+	//return pow(min(1.0, (1.0-abs(v_ftcoord.x*2.0-1.0)*strokeMult)) * min(1.0, v_ftcoord.y), 1.0);
+    //return smoothstep(0.0, 1.0, (1.0-abs(v_ftcoord.x*2.0-1.0))*strokeMult) * smoothstep(0.0, 1.0, v_ftcoord.y);
+}
 
     // -- fragmentConstants
     int c_instance = v_instance;
     int c_element = 0;
     vec2 c_screenPosition = gl_FragCoord.xy / u_contentScale;
-    float c_contourPosition = 0.0;
-    vec3 c_boundsPosition = vec3(va_texCoord0, 0.0);
-    vec3 c_boundsSize = v_boundsSize;
-    
+    float c_contourPosition = va_vertexOffset;
+    vec3 c_boundsPosition = vec3(v_objectPosition.xy - bounds.xy, 0.0) / vec3(bounds.zw,1.0);
+    vec3 c_boundsSize = vec3(bounds.zw, 0.0);
+
 void main(void) {
-    vec4 x_fill = vi_fill;
-    vec4 x_stroke = vi_stroke;
-    {
-        
-                    x_fill.rgb = texture(p_tex0, c_boundsPosition).rgb;
-                
-    }
-    vec2 wd = fwidth(va_texCoord0 - vec2(0.5));
-    vec2 d = abs((va_texCoord0 - vec2(0.5)) * 2);
+	float strokeAlpha = strokeMask();
 
-    float irx = smoothstep(0.0, wd.x * 2.5, 1.0-d.x - vi_strokeWeight*2.0/vi_dimensions.x);
-    float iry = smoothstep(0.0, wd.y * 2.5, 1.0-d.y - vi_strokeWeight*2.0/vi_dimensions.y);
-    float ir = irx*iry;
+    vec4 x_stroke = u_stroke;
+    vec4 x_fill = u_fill;
 
-    vec4 final = vec4(1.0);
-    final.rgb = x_fill.rgb * x_fill.a;
-    final.a = x_fill.a;
+    { 
+            if (length(c_contourPosition) > 0.9) { // This condition identifies pixels near the stroke
+                x_fill = vec4(1.0, 0.0, 0.0, 1.0); // Red color for stroke
+            } else {
+                vec2 texCoord = va_texCoord0.xy;
+                texCoord = vec2(texCoord.y, 1.0 - texCoord.x);
+                vec2 size = textureSize(p_image, 0);
+                vec2 aspect = vec2(size.x / size.y, 1);
+                texCoord = 0.5 + (texCoord - 0.5) / aspect;
+                x_fill = texture(p_image, texCoord);
+                """
+                parameter("image", image)
+            }
+                 }
 
-    float sa = (1.0-ir) * x_stroke.a;
-    final.rgb = final.rgb * (1.0-sa) + x_stroke.rgb * sa;
-    final.a = final.a * (1.0-sa) + sa;
+    vec4 color = mix(x_stroke, x_fill, strokeFillFactor)  * vec4(1, 1, 1, strokeAlpha);
+    vec4 result = color;
 
-       o_color = final;
+    if (strokeAlpha < strokeThr) {
+	    discard;
+	}
+
+    vec4 final = result;
+	final = result;
+	final.rgb *= final.a;
+    o_color = final;
 }
 // -------------
-// shade-style-custom:rectangle-1085498658
-// created 2023-09-03T15:09:56.298311
+// shade-style-custom:expansion-448144159
+// created 2023-09-12T21:18:53.667466
 /*
-ERROR: 0:73: No matching function for call to texture(sampler2D, vec3)
+ERROR: 0:94: '<' : syntax error: syntax error
 */

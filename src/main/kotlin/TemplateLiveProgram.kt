@@ -57,51 +57,72 @@ fun main() = application {
             a.loadFromJson(File("data/keyframes/keyframes-0.json"))
         }
 
-        val rt = renderTarget(width, height) {
-            colorBuffer()
-        }
-        val cubeDim = 80.0
-        val cube = boxMesh(cubeDim, cubeDim, cubeDim)
-        val cam = Orbital()
-        cam.eye = -Vector3.UNIT_Z * 150.0
+//        val rt = renderTarget(width, height) {
+//            colorBuffer()
+//        }
+//        val cam = Orbital()
 
-        extend(cam)
+//        extend(cam)
 
         val globalSpeed = 0.01
+        val circStroke = 20.0
+        val strokeGap = 2.0
+        val circRadMult = 20.0
+        val circCount = 8
 
+
+        // ( height / circCount )
+        var circArr = mutableListOf<Circle>()
+        for(n in 1..circCount){
+            circArr.add(Circle(
+                drawer.bounds.center.x,
+                drawer.bounds.center.y,
+                (n) * circRadMult
+            ))
+        }
 
         extend {
             animArr.forEachIndexed { i, a ->
                 a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
             }
             drawer.clear(ColorRGBa.TRANSPARENT)
-            drawer.pushStyle()
-            drawer.stroke = ColorRGBa.fromHex(0x252525)
-            drawer.strokeWeight = 1.0
-            drawer.fill = null
-            drawer.rectangle(drawer.bounds)
-            drawer.popStyle()
+//            drawer.pushStyle()
+//            drawer.stroke = ColorRGBa.fromHex(0x252525)
+//            drawer.strokeWeight = 1.0
+//            drawer.fill = null
+//            drawer.rectangle(drawer.bounds)
+//            drawer.popStyle()
 //            drawer.fill = ColorRGBa.WHITE
-            drawer.shadeStyle = shadeStyle {
-                fragmentTransform = """
-                vec2 texCoord = va_texCoord0.xy;
-                texCoord = vec2(texCoord.y, 1.0 - texCoord.x);
-                vec2 size = textureSize(p_image, 0);
-                vec2 aspect = vec2(size.x / size.y, 1);
-                texCoord = 0.5 + (texCoord - 0.5) / aspect;
-                x_fill = texture(p_image, texCoord);
-                """
-                parameter("image", image)
-            }
+
+//            drawer.shadeStyle = shadeStyle {
+//                fragmentTransform = """
+//                vec2 texCoord = va_texCoord0.xy;
+//                texCoord = vec2(texCoord.y, 1.0 - texCoord.x);
+//                vec2 size = textureSize(p_image, 0);
+//                vec2 aspect = vec2(size.x / size.y, 1);
+//                texCoord = 0.5 + (texCoord - 0.5) / aspect;
+//                x_fill = texture(p_image, texCoord);
+//                """
+//                parameter("image", image)
+//            }
 
 //            drawer.stroke = ColorRGBa.fromHex(0xf6f6f6)
 //            drawer.strokeWeight = 1.0
-            drawer.rotate(Vector3(
-                0.0,
-                1.0,
-                0.0
-            ), animArr[0].pathSlider * -100.0)
-            drawer.vertexBuffer(cube, DrawPrimitive.TRIANGLES)
+//            drawer.rotate(Vector3(
+//                0.0,
+//                1.0,
+//                0.0
+//            ), animArr[0].pathSlider * -100.0)
+
+//            drawer.vertexBuffer(cube, DrawPrimitive.TRIANGLES)
+//            drawer.translate(-drawer.bounds.center)
+//            drawer.fill = ColorRGBa.GREEN
+            drawer.stroke = ColorRGBa.BLUE
+            drawer.fill = null
+            drawer.strokeWeight = circStroke - strokeGap
+            circArr.forEach { c->
+                drawer.contour(c.contour)
+            }
         }
     }
 }
