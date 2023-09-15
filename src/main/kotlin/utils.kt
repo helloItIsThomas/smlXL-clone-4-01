@@ -1,3 +1,4 @@
+import org.openrndr.draw.Drawer
 import org.openrndr.draw.FontImageMap
 import org.openrndr.draw.FontMap
 import org.openrndr.draw.loadFont
@@ -49,4 +50,19 @@ fun defaultTypeSetup(refScale: DoubleArray, fontDistro: List<String>): Pair<List
         }
     }
     return Pair(mapList, imageMapList)
+}
+
+class onceObj {
+    var current = 1
+    var new = 0
+    fun check(_checked: Int): Boolean {
+        this.new = _checked
+        if (this.new == this.current) {
+            return false
+        } else {
+            this.current = this.new
+            println("true")
+            return true
+        }
+    }
 }
