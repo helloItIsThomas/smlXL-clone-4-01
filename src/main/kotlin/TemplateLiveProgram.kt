@@ -10,9 +10,12 @@ import org.openrndr.draw.*
 import org.openrndr.draw.font.loadFace
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
+import org.openrndr.extra.shapes.rectify.RectifiedContour
+import org.openrndr.extra.shapes.rectify.rectified
 import org.openrndr.math.IntVector2
 import org.openrndr.math.Matrix44
 import org.openrndr.math.transforms.scale
+import org.openrndr.shape.Circle
 import org.openrndr.shape.Rectangle
 import java.io.File
 
@@ -38,20 +41,7 @@ fun main() = application {
         mouse.buttonDown.listen { mouseState = "down" }
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
-// TYPE STRETCH STUFF
-//        val faceSize = 64.0
-//        val face = loadFace("data/fonts/default.otf")
-//        val characters = "STARS"
-//        val faceShapes = characters.map { char ->
-//            face.glyphForCharacter(char).shape(faceSize)
-//        }
-//        var scaleMatrix = Matrix44.scale(1.0, 1.0, 1.0)
-//        var faceContours = faceShapes.map { n ->
-//            n.contours[0].contour.transform(scaleMatrix)
-//        }
-// END //////////////
         val incremCheck = onceObj()
-// END //////////////
         var palette = listOf(ColorRGBa.fromHex(0xF1934B), ColorRGBa.fromHex(0x0E8847), ColorRGBa.fromHex(0xD73E1C), ColorRGBa.fromHex(0xF4ECDF), ColorRGBa.fromHex(0x552F20))
         val animation = Animation()
         val loopDelay = 3.0
@@ -70,10 +60,9 @@ fun main() = application {
         animArr.forEach { a ->
             a.loadFromJson(File("data/keyframes/keyframes-0.json"))
         }
-//        val rt = renderTarget(width, height) {
-//            colorBuffer()
-//        }
         val globalSpeed = 0.01
+
+
 
         extend {
             animArr.forEachIndexed { i, a ->
