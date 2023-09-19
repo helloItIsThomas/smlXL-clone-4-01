@@ -17,6 +17,7 @@ import org.openrndr.math.Matrix44
 import org.openrndr.math.transforms.scale
 import org.openrndr.shape.Circle
 import org.openrndr.shape.Rectangle
+import org.openrndr.shape.findShapes
 import org.openrndr.svg.loadSVG
 import java.io.File
 
@@ -44,11 +45,16 @@ fun main() = application {
 // END //////////////
         val incremCheck = onceObj()
         var palette = listOf(ColorRGBa.fromHex(0xF1934B), ColorRGBa.fromHex(0x0E8847), ColorRGBa.fromHex(0xD73E1C), ColorRGBa.fromHex(0xF4ECDF), ColorRGBa.fromHex(0x552F20))
+        val white = ColorRGBa.WHITE
+        val black = ColorRGBa.BLACK
         val animation = Animation()
         val loopDelay = 3.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
         val svgA = loadSVG(File("data/fonts/a.svg"))
+        val firstShape = svgA.root.findShapes()[0]
+        val firstContour = firstShape.shape.contours[0]
+
         val image = loadImage("data/images/cheeta.jpg")
         val scale: DoubleArray = typeScale(3, 100.0, 3)
         val typeFace: Pair<List<FontMap>, List<FontImageMap>> = defaultTypeSetup(scale, listOf("reg", "reg", "bold"))
@@ -72,9 +78,7 @@ fun main() = application {
             }
             drawer.clear(ColorRGBa.TRANSPARENT)
             drawer.circle(drawer.bounds.center, 10.0)
-
-            drawer.composition(svgA)
-
+            drawer.stroke = white
 
             // THIS NEEDS TO STAY AT THE END //
             if (mouseClick) mouseClick = false
