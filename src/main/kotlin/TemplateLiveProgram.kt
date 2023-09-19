@@ -17,6 +17,7 @@ import org.openrndr.math.Matrix44
 import org.openrndr.math.transforms.scale
 import org.openrndr.shape.Circle
 import org.openrndr.shape.Rectangle
+import org.openrndr.svg.loadSVG
 import java.io.File
 
 
@@ -47,6 +48,7 @@ fun main() = application {
         val loopDelay = 3.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
+        val svgA = loadSVG(File("data/fonts/a.svg"))
         val image = loadImage("data/images/cheeta.jpg")
         val scale: DoubleArray = typeScale(3, 100.0, 3)
         val typeFace: Pair<List<FontMap>, List<FontImageMap>> = defaultTypeSetup(scale, listOf("reg", "reg", "bold"))
@@ -70,6 +72,8 @@ fun main() = application {
             }
             drawer.clear(ColorRGBa.TRANSPARENT)
             drawer.circle(drawer.bounds.center, 10.0)
+
+            drawer.composition(svgA)
 
 
             // THIS NEEDS TO STAY AT THE END //
