@@ -10,6 +10,7 @@ import org.openrndr.draw.*
 import org.openrndr.draw.font.loadFace
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
+import org.openrndr.extra.shapes.grid
 import org.openrndr.extra.shapes.rectify.RectifiedContour
 import org.openrndr.extra.shapes.rectify.rectified
 import org.openrndr.math.IntVector2
@@ -43,6 +44,15 @@ fun main() = application {
         mouse.buttonDown.listen { mouseState = "down" }
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
+        val columnCount = 3
+        val rowCount = 3
+        val marginX = 10.0
+        val marginY = 10.0
+        val gutterX = 3.0
+        val gutterY = 3.0
+        var grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
+        val flatGrid = grid.flatten()
+
         val incremCheck = onceObj()
         var palette = listOf(ColorRGBa.fromHex(0xF1934B), ColorRGBa.fromHex(0x0E8847), ColorRGBa.fromHex(0xD73E1C), ColorRGBa.fromHex(0xF4ECDF), ColorRGBa.fromHex(0x552F20))
         val white = ColorRGBa.WHITE
