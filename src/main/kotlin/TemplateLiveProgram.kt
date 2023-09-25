@@ -8,29 +8,31 @@ import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.draw.font.loadFace
+import org.openrndr.extra.fx.edges.Contour
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
+import org.openrndr.extra.parameters.listParameters
 import org.openrndr.extra.shapes.grid
 import org.openrndr.extra.shapes.rectify.RectifiedContour
 import org.openrndr.extra.shapes.rectify.rectified
 import org.openrndr.math.IntVector2
 import org.openrndr.math.Matrix44
+import org.openrndr.math.Vector2
+import org.openrndr.math.Vector3
 import org.openrndr.math.transforms.scale
-import org.openrndr.shape.Circle
-import org.openrndr.shape.Rectangle
-import org.openrndr.shape.findShapes
+import org.openrndr.shape.*
 import org.openrndr.svg.loadSVG
 import java.io.File
+import kotlin.math.min
 
 
-@OptIn(DelicateCoroutinesApi::class)
 fun main() = application {
     configure {
         width = 608
         height = 342
         hideWindowDecorations = true
         windowAlwaysOnTop = true
-        position = IntVector2(1285,110)
+        position = IntVector2(1185,110)
         windowTransparent = true
         multisample = WindowMultisample.SampleCount(4)
     }
@@ -44,8 +46,8 @@ fun main() = application {
         mouse.buttonDown.listen { mouseState = "down" }
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
-        val columnCount = 3
-        val rowCount = 3
+        val columnCount = 10
+        val rowCount = 2
         val marginX = 10.0
         val marginY = 10.0
         val gutterX = 3.0
@@ -61,9 +63,15 @@ fun main() = application {
         val loopDelay = 3.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
-        val svgA = loadSVG(File("data/fonts/a.svg"))
-        val firstShape = svgA.root.findShapes()[0]
+        val svgA: Composition = loadSVG(File("data/fonts/a.svg"))
+        val firstShape: ShapeNode = svgA.root.findShapes()[0]
         val firstContour = firstShape.shape.contours[0]
+
+////////
+////////
+
+
+
 
         val image = loadImage("data/images/cheeta.jpg")
         val scale: DoubleArray = typeScale(3, 100.0, 3)
@@ -87,8 +95,43 @@ fun main() = application {
                 a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
             }
             drawer.clear(ColorRGBa.TRANSPARENT)
-            drawer.circle(drawer.bounds.center, 10.0)
-            drawer.stroke = white
+            drawer.fill = null
+            drawer.stroke = ColorRGBa.PINK
+            drawer.rectangle(drawer.bounds)
+            drawer.fill = ColorRGBa.PINK
+
+//            flatGrid.forEach { r->
+//                drawer.pushTransforms()
+//                drawer.translate(r.x, r.y)
+//                drawer.scale(0.25)
+//                drawer.shape(firstShape.shape)
+//                drawer.defaults()
+//                drawer.popTransforms()
+//            }
+
+            fun createScaleMatrix(scaleX: Double, scaleY: Double): Matrix44 {
+                return Matrix44(
+                    c0r0 = scaleX, c1r1 = scaleY,
+                    c2r2 = 1.0, c3r3 = 1.0
+                )
+            }
+
+
+
+            flatGrid.forEach { r ->
+                drawer.pushTransforms()
+                val shapeBounds = firstShape.shape.bounds
+                val scaleX = r.width / shapeBounds.width
+                val scaleY = r.height / shapeBounds.height
+                val myMatrix = createScaleMatrix(scaleX, scaleY)
+                drawer.translate(r.x, r.y)
+                drawer.shape(firstShape.shape.transform(myMatrix))
+                drawer.popTransforms()
+            }
+
+
+
+
 
             // THIS NEEDS TO STAY AT THE END //
             if (mouseClick) mouseClick = false
