@@ -52,7 +52,7 @@ fun main() = application {
         var marginX = 10.0
         var marginY = 10.0
         var gutterX = 3.0
-        var gutterY = 3.0
+        var gutterY = 20.0
         var grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
         var flatGrid = grid.flatten()
 
@@ -121,20 +121,20 @@ fun main() = application {
                 if (r.y < height * 0.33) {
                     // TOP //
                     scaleY = (r.height / shapeBounds.height) * sin(
-                        (i*2.0) + frameCount * globalSpeed
+                        (i*baseFrequency) + frameCount * globalSpeed
                     ).map(
                         -1.0,
                         1.0,
                         0.0,
-                        1.0
+                        2.0
                     )
                 } else {
                     scaleY = (r.height / shapeBounds.height) * sin(
-                        (i*2.0) + frameCount * globalSpeed
+                        (i*baseFrequency) + frameCount * globalSpeed
                     ).map(
                         -1.0,
                         1.0,
-                        1.0,
+                        2.0,
                         0.0
                     )
                     translateY = r.y + r.height - (shapeBounds.height * scaleY) // Adjust Y-translation for bottom row
