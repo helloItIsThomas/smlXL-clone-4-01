@@ -8,6 +8,9 @@ import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.draw.font.loadFace
+import org.openrndr.extra.fx.blur.FrameBlur
+import org.openrndr.extra.fx.blur.GaussianBloom
+import org.openrndr.extra.fx.blur.HashBlur
 import org.openrndr.extra.fx.edges.Contour
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
@@ -21,22 +24,23 @@ import org.openrndr.math.transforms.scale
 import org.openrndr.shape.*
 import org.openrndr.svg.loadSVG
 import java.io.File
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.min
-import kotlin.math.sin
+import kotlin.math.*
 
 
 fun main() = application {
     configure {
         width = 608
         height = 342
+//        windowResizable = true
         hideWindowDecorations = true
         windowAlwaysOnTop = true
-        position = IntVector2(1185,110)
+        position = IntVector2(1184,110)
         windowTransparent = true
+//        windowResizable = true
         multisample = WindowMultisample.SampleCount(4)
+        hideCursor = true
     }
+
     oliveProgram {
 // MOUSE STUFF //////
         var mouseClick = false
@@ -47,12 +51,12 @@ fun main() = application {
         mouse.buttonDown.listen { mouseState = "down" }
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
-        var columnCount = 7
+        var columnCount = 30//16
         var rowCount = 2
         var marginX = 10.0
         var marginY = 10.0
-        var gutterX = 3.0
-        var gutterY = 20.0
+        var gutterX = 10.0
+        var gutterY = height * 0.025
         var grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
         var flatGrid = grid.flatten()
 
@@ -66,6 +70,7 @@ fun main() = application {
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
         val svgA: Composition = loadSVG(File("data/fonts/a.svg"))
         val firstShape: ShapeNode = svgA.root.findShapes()[0]
+        val bounds = firstShape.shape.bounds
         val firstContour = firstShape.shape.contours[0]
         val image = loadImage("data/images/cheeta.jpg")
         val scale: DoubleArray = typeScale(3, 100.0, 3)
@@ -80,6 +85,7 @@ fun main() = application {
         flatGrid.forEach { g->
             animArr.add(Animation())
         }
+        val uniqueY = flatGrid.map { it.y }.distinct().sorted()
 
         animArr.forEach { a ->
             a.loadFromJson(File("data/keyframes/keyframes-0.json"))
@@ -100,93 +106,45 @@ fun main() = application {
 //            frameRate = 30
 //        }
         extend {
-
             animArr.forEachIndexed { i, a ->
 //                a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
-                a(((i * baseFrequency)*0.05 + frameCount * globalSpeed) % loopDelay)
+                a(((i * baseFrequency) * 0.15 + frameCount * globalSpeed) % loopDelay)
             }
             drawer.clear(ColorRGBa.BLACK)
             drawer.fill = null
-            drawer.stroke = ColorRGBa.PINK
-            drawer.rectangle(drawer.bounds)
 
-            columnCount = animArr[0].circleSlider.map(0.0, 1.0, 15.0, 60.0).toInt()
-            rowCount = 2
-            marginX = 10.0
-            marginY = 10.0
-            gutterX = 3.0
-            gutterY = 20.0
-            grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
-            flatGrid = grid.flatten()
             baseFrequency = (2 * PI) / columnCount
             frequency = baseFrequency / columnCount.toDouble()
 
 
-            drawer.fill = ColorRGBa.PINK
             flatGrid.forEachIndexed { i, r ->
                 drawer.pushTransforms()
-                val shapeBounds = firstShape.shape.bounds
-                val scaleX = r.width / shapeBounds.width
-                var scaleY = 0.0
-                var translateY = r.y // Default Y-translation
+                val scaleX = r.width / bounds.width
 
-                if (r.y < height * 0.33) {
-                    // TOP //
-                    scaleY = (r.height / shapeBounds.height) * sin(
-                        (i*baseFrequency) + frameCount * globalSpeed
-                    ).map(
-                        -1.0,
-                        1.0,
-                        0.0,
-                        2.0
-                    )
+                val rowIndex = uniqueY.indexOf(r.y)
+                val isTopPinned = rowIndex % 2 == 0
+                val invertPeriod = rowIndex == 2 || rowIndex == 3
+                val freqMultiplier = if (invertPeriod) -1 else 1
+                val adjustIndex = if (rowIndex == 3) 0 else if (rowIndex == 2) 1 else rowIndex
+
+                val commonSin = sin(abs(i * baseFrequency * freqMultiplier) + frameCount * globalSpeed)
+
+                val scaleY: Double
+                val translateY = if (isTopPinned) {
+                    scaleY = (r.height / bounds.height) * commonSin.map(-1.0, 1.0, 0.0, 2.0)
+                    r.y
                 } else {
-                    scaleY = (r.height / shapeBounds.height) * sin(
-                        (i*baseFrequency) + frameCount * globalSpeed
-                    ).map(
-                        -1.0,
-                        1.0,
-                        2.0,
-                        0.0
-                    )
-                    translateY = r.y + r.height - (shapeBounds.height * scaleY) // Adjust Y-translation for bottom row
+                    scaleY = (r.height / bounds.height) * commonSin.map(-1.0, 1.0, 2.0, 0.0)
+                    r.y + r.height - (bounds.height * scaleY)
                 }
 
-                val myMatrix = createScaleMatrix(scaleX, scaleY)
-                drawer.translate(r.x, translateY) // Use adjusted Y-translation
-                drawer.fill = ColorRGBa(
-                    0.0,
-                    sin(
-                        (i * baseFrequency) + frameCount * globalSpeed
-                    ).map(
-                        -1.0,
-                        1.0,
-                        0.0,
-                        1.0
-                    ),
-                    50.0
-                )
-
-                drawer.stroke = ColorRGBa(
-                    0.0,
-                    sin(
-                        (i * baseFrequency) + frameCount * globalSpeed
-                    ).map(
-                        -1.0,
-                        1.0,
-                        0.0,
-                        1.0
-                    ),
-                    50.0
-                )
-                drawer.shape(firstShape.shape.transform(myMatrix))
+                val commonColor = commonSin.map(-1.0, 1.0, 0.0, 1.0)
+                drawer.translate(r.x, translateY)
+                drawer.fill = ColorRGBa(commonColor, 0.0, 0.75)
+                drawer.stroke = drawer.fill
+                drawer.shape(firstShape.shape.transform(createScaleMatrix(scaleX, scaleY)))
                 drawer.popTransforms()
             }
-
-
-
-
-
 
             // THIS NEEDS TO STAY AT THE END //
             if (mouseClick) mouseClick = false
