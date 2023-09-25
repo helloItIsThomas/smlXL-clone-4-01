@@ -15,15 +15,15 @@ import org.openrndr.extra.parameters.listParameters
 import org.openrndr.extra.shapes.grid
 import org.openrndr.extra.shapes.rectify.RectifiedContour
 import org.openrndr.extra.shapes.rectify.rectified
-import org.openrndr.math.IntVector2
-import org.openrndr.math.Matrix44
-import org.openrndr.math.Vector2
-import org.openrndr.math.Vector3
+import org.openrndr.ffmpeg.ScreenRecorder
+import org.openrndr.math.*
 import org.openrndr.math.transforms.scale
 import org.openrndr.shape.*
 import org.openrndr.svg.loadSVG
 import java.io.File
+import kotlin.math.cos
 import kotlin.math.min
+import kotlin.math.sin
 
 
 fun main() = application {
@@ -46,33 +46,26 @@ fun main() = application {
         mouse.buttonDown.listen { mouseState = "down" }
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
-        val columnCount = 10
-        val rowCount = 2
-        val marginX = 10.0
-        val marginY = 10.0
-        val gutterX = 3.0
-        val gutterY = 3.0
+        var columnCount = 30
+        var rowCount = 2
+        var marginX = 10.0
+        var marginY = 10.0
+        var gutterX = 3.0
+        var gutterY = 3.0
         var grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
-        val flatGrid = grid.flatten()
+        var flatGrid = grid.flatten()
 
         val incremCheck = onceObj()
         var palette = listOf(ColorRGBa.fromHex(0xF1934B), ColorRGBa.fromHex(0x0E8847), ColorRGBa.fromHex(0xD73E1C), ColorRGBa.fromHex(0xF4ECDF), ColorRGBa.fromHex(0x552F20))
         val white = ColorRGBa.WHITE
         val black = ColorRGBa.BLACK
         val animation = Animation()
-        val loopDelay = 3.0
+        val loopDelay = 1.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
         val svgA: Composition = loadSVG(File("data/fonts/a.svg"))
         val firstShape: ShapeNode = svgA.root.findShapes()[0]
         val firstContour = firstShape.shape.contours[0]
-
-////////
-////////
-
-
-
-
         val image = loadImage("data/images/cheeta.jpg")
         val scale: DoubleArray = typeScale(3, 100.0, 3)
         val typeFace: Pair<List<FontMap>, List<FontImageMap>> = defaultTypeSetup(scale, listOf("reg", "reg", "bold"))
@@ -80,49 +73,55 @@ fun main() = application {
         val randNums = mutableListOf<Double>()
         val charArr = message.toCharArray()
         charArr.forEach { e ->
-            animArr.add(Animation())
             randNums.add(random(0.0, 1.0))
         }
+
+        flatGrid.forEach { g->
+            animArr.add(Animation())
+        }
+
         animArr.forEach { a ->
             a.loadFromJson(File("data/keyframes/keyframes-0.json"))
         }
-        val globalSpeed = 0.01
 
+        fun createScaleMatrix(scaleX: Double, scaleY: Double): Matrix44 {
+            return Matrix44(
+                c0r0 = scaleX, c1r1 = scaleY,
+                c2r2 = 1.0, c3r3 = 1.0
+            )
+        }
 
+        val globalSpeed = 0.025
+        val timeToWrap = loopDelay / (30.0 * globalSpeed)
 
+//        extend(ScreenRecorder()) {
+//            frameRate = 30
+//            maximumDuration =  timeToWrap
+//        }
         extend {
             animArr.forEachIndexed { i, a ->
-                a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
+//                a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
+                a((i * 0.005 + frameCount * globalSpeed) % loopDelay)
             }
-            drawer.clear(ColorRGBa.TRANSPARENT)
+            drawer.clear(ColorRGBa.BLACK)
             drawer.fill = null
             drawer.stroke = ColorRGBa.PINK
             drawer.rectangle(drawer.bounds)
+//            grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
+//            flatGrid = grid.flatten()
+
+
             drawer.fill = ColorRGBa.PINK
-
-//            flatGrid.forEach { r->
-//                drawer.pushTransforms()
-//                drawer.translate(r.x, r.y)
-//                drawer.scale(0.25)
-//                drawer.shape(firstShape.shape)
-//                drawer.defaults()
-//                drawer.popTransforms()
-//            }
-
-            fun createScaleMatrix(scaleX: Double, scaleY: Double): Matrix44 {
-                return Matrix44(
-                    c0r0 = scaleX, c1r1 = scaleY,
-                    c2r2 = 1.0, c3r3 = 1.0
-                )
-            }
-
-
-
-            flatGrid.forEach { r ->
+            flatGrid.forEachIndexed { i, r ->
                 drawer.pushTransforms()
                 val shapeBounds = firstShape.shape.bounds
                 val scaleX = r.width / shapeBounds.width
-                val scaleY = r.height / shapeBounds.height
+                var scaleY = 0.0
+                if(r.y > height *0.33){
+                    scaleY = (r.height / shapeBounds.height) * sin(i*0.05 + frameCount*globalSpeed).map(-1.0,1.0,1.0,0.0)
+                } else {
+                    scaleY = (r.height / shapeBounds.height) * cos(i*0.05 + frameCount*globalSpeed).map(-1.0,1.0,0.0,1.0)
+                }
                 val myMatrix = createScaleMatrix(scaleX, scaleY)
                 drawer.translate(r.x, r.y)
                 drawer.shape(firstShape.shape.transform(myMatrix))
