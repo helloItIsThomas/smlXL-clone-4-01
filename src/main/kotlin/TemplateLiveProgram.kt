@@ -47,7 +47,7 @@ fun main() = application {
         mouse.buttonDown.listen { mouseState = "down" }
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
-        var columnCount = 30
+        var columnCount = 7
         var rowCount = 2
         var marginX = 10.0
         var marginY = 10.0
@@ -61,7 +61,7 @@ fun main() = application {
         val white = ColorRGBa.WHITE
         val black = ColorRGBa.BLACK
         val animation = Animation()
-        val loopDelay = 1.0
+        val loopDelay = 2.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
         val svgA: Composition = loadSVG(File("data/fonts/a.svg"))
@@ -92,22 +92,34 @@ fun main() = application {
             )
         }
 
-        val globalSpeed = 0.025
-        val baseFrequency = (2 * PI) / columnCount
-        val frequency = baseFrequency / columnCount.toDouble()
+        val globalSpeed = 0.0085
+        var baseFrequency = (2 * PI) / columnCount
+        var frequency = baseFrequency / columnCount.toDouble()
 
 //        extend(ScreenRecorder()) {
 //            frameRate = 30
 //        }
         extend {
+
             animArr.forEachIndexed { i, a ->
 //                a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
-                a((i * 0.005 + frameCount * globalSpeed) % loopDelay)
+                a(((i * baseFrequency)*0.05 + frameCount * globalSpeed) % loopDelay)
             }
             drawer.clear(ColorRGBa.BLACK)
             drawer.fill = null
             drawer.stroke = ColorRGBa.PINK
             drawer.rectangle(drawer.bounds)
+
+            columnCount = animArr[0].circleSlider.map(0.0, 1.0, 15.0, 60.0).toInt()
+            rowCount = 2
+            marginX = 10.0
+            marginY = 10.0
+            gutterX = 3.0
+            gutterY = 20.0
+            grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
+            flatGrid = grid.flatten()
+            baseFrequency = (2 * PI) / columnCount
+            frequency = baseFrequency / columnCount.toDouble()
 
 
             drawer.fill = ColorRGBa.PINK
@@ -142,6 +154,31 @@ fun main() = application {
 
                 val myMatrix = createScaleMatrix(scaleX, scaleY)
                 drawer.translate(r.x, translateY) // Use adjusted Y-translation
+                drawer.fill = ColorRGBa(
+                    0.0,
+                    sin(
+                        (i * baseFrequency) + frameCount * globalSpeed
+                    ).map(
+                        -1.0,
+                        1.0,
+                        0.0,
+                        1.0
+                    ),
+                    50.0
+                )
+
+                drawer.stroke = ColorRGBa(
+                    0.0,
+                    sin(
+                        (i * baseFrequency) + frameCount * globalSpeed
+                    ).map(
+                        -1.0,
+                        1.0,
+                        0.0,
+                        1.0
+                    ),
+                    50.0
+                )
                 drawer.shape(firstShape.shape.transform(myMatrix))
                 drawer.popTransforms()
             }
