@@ -21,6 +21,7 @@ import org.openrndr.math.transforms.scale
 import org.openrndr.shape.*
 import org.openrndr.svg.loadSVG
 import java.io.File
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -92,11 +93,11 @@ fun main() = application {
         }
 
         val globalSpeed = 0.025
-        val timeToWrap = loopDelay / (30.0 * globalSpeed)
+        val baseFrequency = (2 * PI) / columnCount
+        val frequency = baseFrequency / columnCount.toDouble()
 
 //        extend(ScreenRecorder()) {
 //            frameRate = 30
-//            maximumDuration =  timeToWrap
 //        }
         extend {
             animArr.forEachIndexed { i, a ->
@@ -107,8 +108,6 @@ fun main() = application {
             drawer.fill = null
             drawer.stroke = ColorRGBa.PINK
             drawer.rectangle(drawer.bounds)
-//            grid = drawer.bounds.grid(columnCount, rowCount, marginX, marginY, gutterX, gutterY)
-//            flatGrid = grid.flatten()
 
 
             drawer.fill = ColorRGBa.PINK
@@ -121,10 +120,23 @@ fun main() = application {
 
                 if (r.y < height * 0.33) {
                     // TOP //
-                    scaleY = (r.height / shapeBounds.height) * sin(i * 0.05 + frameCount * globalSpeed).map(-1.0, 1.0, 0.0, 2.0)
+                    scaleY = (r.height / shapeBounds.height) * sin(
+                        (i*2.0) + frameCount * globalSpeed
+                    ).map(
+                        -1.0,
+                        1.0,
+                        0.0,
+                        1.0
+                    )
                 } else {
-                    // BOTTOM //
-                    scaleY = (r.height / shapeBounds.height) * cos(i * 0.05 + frameCount * globalSpeed).map(-1.0, 1.0, 0.0, 2.0)
+                    scaleY = (r.height / shapeBounds.height) * sin(
+                        (i*2.0) + frameCount * globalSpeed
+                    ).map(
+                        -1.0,
+                        1.0,
+                        1.0,
+                        0.0
+                    )
                     translateY = r.y + r.height - (shapeBounds.height * scaleY) // Adjust Y-translation for bottom row
                 }
 
