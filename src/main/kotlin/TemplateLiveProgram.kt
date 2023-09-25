@@ -117,16 +117,23 @@ fun main() = application {
                 val shapeBounds = firstShape.shape.bounds
                 val scaleX = r.width / shapeBounds.width
                 var scaleY = 0.0
-                if(r.y > height *0.33){
-                    scaleY = (r.height / shapeBounds.height) * sin(i*0.05 + frameCount*globalSpeed).map(-1.0,1.0,1.0,0.0)
+                var translateY = r.y // Default Y-translation
+
+                if (r.y < height * 0.33) {
+                    // TOP //
+                    scaleY = (r.height / shapeBounds.height) * sin(i * 0.05 + frameCount * globalSpeed).map(-1.0, 1.0, 0.0, 2.0)
                 } else {
-                    scaleY = (r.height / shapeBounds.height) * cos(i*0.05 + frameCount*globalSpeed).map(-1.0,1.0,0.0,1.0)
+                    // BOTTOM //
+                    scaleY = (r.height / shapeBounds.height) * cos(i * 0.05 + frameCount * globalSpeed).map(-1.0, 1.0, 0.0, 2.0)
+                    translateY = r.y + r.height - (shapeBounds.height * scaleY) // Adjust Y-translation for bottom row
                 }
+
                 val myMatrix = createScaleMatrix(scaleX, scaleY)
-                drawer.translate(r.x, r.y)
+                drawer.translate(r.x, translateY) // Use adjusted Y-translation
                 drawer.shape(firstShape.shape.transform(myMatrix))
                 drawer.popTransforms()
             }
+
 
 
 
