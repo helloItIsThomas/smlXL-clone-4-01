@@ -1,6 +1,8 @@
 
 import classes.CButton
 import classes.CSlider
+import ddf.minim.Minim
+import ddf.minim.analysis.FFT
 import demos.classes.Animation
 import kotlinx.coroutines.DelicateCoroutinesApi
 import org.openrndr.WindowMultisample
@@ -8,6 +10,7 @@ import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.*
 import org.openrndr.draw.font.loadFace
+import org.openrndr.extra.envelopes.ADSRTracker
 import org.openrndr.extra.fx.blur.FrameBlur
 import org.openrndr.extra.fx.blur.GaussianBloom
 import org.openrndr.extra.fx.blur.HashBlur
@@ -24,6 +27,8 @@ import org.openrndr.math.transforms.scale
 import org.openrndr.shape.*
 import org.openrndr.svg.loadSVG
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
 import kotlin.math.*
 
 
@@ -34,7 +39,8 @@ fun main() = application {
 //        windowResizable = true
         hideWindowDecorations = true
         windowAlwaysOnTop = true
-        position = IntVector2(1184,110)
+//        position = IntVector2(1184,110)
+        position = IntVector2(1300,110)
         windowTransparent = true
 //        windowResizable = true
         multisample = WindowMultisample.SampleCount(4)
@@ -102,6 +108,42 @@ fun main() = application {
         var baseFrequency = (2 * PI) / columnCount
         var frequency = baseFrequency / columnCount.toDouble()
 
+        // AUDIO STUFF
+
+        val minim = Minim(object : Object() {
+            fun sketchPath(fileName: String): String {
+                return fileName
+            }
+            fun createInput(fileName: String): InputStream {
+                return FileInputStream(File(fileName))
+            }
+        })
+        val lineIn = minim.lineIn
+
+        val fft = FFT(lineIn.bufferSize(), lineIn.sampleRate())
+        var maxKickAverage = Double.MIN_VALUE
+        var minKickAverage = Double.MAX_VALUE
+        var normalizedKickAverage = 0.0
+
+        var minSynthAverage = Double.MAX_VALUE
+        var maxSynthAverage = Double.MIN_VALUE
+        var normalizedSynthAverage = 0.0
+
+        val tracker = ADSRTracker(this)
+        tracker.attack = 0.00
+        tracker.decay = 0.55
+        tracker.sustain = 0.0
+        tracker.release = 0.4
+        var isTriggerOn = false
+        val kickThresh = 0.75
+
+        val targetLowBand = 0// 11
+        val targetHighBand = fft.specSize() //23
+
+        val scaleX = width / 50.0
+        val scaleY = height * 0.05
+
+
 //        extend(ScreenRecorder()) {
 //            frameRate = 30
 //        }
@@ -111,10 +153,38 @@ fun main() = application {
                 a(((i * baseFrequency) * 0.15 + frameCount * globalSpeed) % loopDelay)
             }
             drawer.clear(ColorRGBa.BLACK)
+            fft.forward(lineIn.mix)
+
             drawer.fill = null
 
             baseFrequency = (2 * PI) / columnCount
             frequency = baseFrequency / columnCount.toDouble()
+            // Existing code for kick detection
+            var kickSum = 0.0
+            var kickCount = 0
+            for (i in 0 until (fft.specSize() * 0.01).toInt()) {
+                val realBandHeight = fft.getBand(i) * 4
+                kickSum += realBandHeight
+                kickCount++
+            }
+            val kickAverage = if (kickCount > 0) kickSum / kickCount else 0.0
+
+            // Normalize kickAverage
+            minKickAverage = min(minKickAverage, kickAverage)
+            maxKickAverage = max(maxKickAverage, kickAverage)
+            if (maxKickAverage > minKickAverage) {
+                normalizedKickAverage = (kickAverage - minKickAverage) / (maxKickAverage - minKickAverage)
+            }
+
+            if (normalizedKickAverage > kickThresh && !isTriggerOn) {
+                tracker.triggerOn()
+                isTriggerOn = true
+            } else if (normalizedKickAverage <= kickThresh && isTriggerOn) {
+                tracker.triggerOff()
+                isTriggerOn = false
+            }
+
+// ... (your existing code for kick detection continues)
 
 
             flatGrid.forEachIndexed { i, r ->
@@ -145,6 +215,16 @@ fun main() = application {
                 drawer.shape(firstShape.shape.transform(createScaleMatrix(scaleX, scaleY)))
                 drawer.popTransforms()
             }
+
+            for (i in targetLowBand..targetHighBand) {
+                val bandHeight = fft.getBand(i)
+                // Draw lines according to bandHeight
+                drawer.lineSegment(
+                    x0 = i * scaleX, y0 = height.toDouble(),
+                    x1 = i * scaleX, y1 = (height - bandHeight * scaleY)
+                )
+            }
+
 
             // THIS NEEDS TO STAY AT THE END //
             if (mouseClick) mouseClick = false
