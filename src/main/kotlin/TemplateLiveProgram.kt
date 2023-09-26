@@ -108,8 +108,8 @@ fun main() = application {
         var baseFrequency = (2 * PI) / columnCount
         var frequency = baseFrequency / columnCount.toDouble()
 
-        // AUDIO STUFF
 
+        // AUDIO STUFF
         val minim = Minim(object : Object() {
             fun sketchPath(fileName: String): String {
                 return fileName
@@ -125,10 +125,6 @@ fun main() = application {
         var minKickAverage = Double.MAX_VALUE
         var normalizedKickAverage = 0.0
 
-        var minSynthAverage = Double.MAX_VALUE
-        var maxSynthAverage = Double.MIN_VALUE
-        var normalizedSynthAverage = 0.0
-
         val tracker = ADSRTracker(this)
         tracker.attack = 0.00
         tracker.decay = 0.55
@@ -140,7 +136,7 @@ fun main() = application {
         val targetLowBand = 0// 11
         val targetHighBand = fft.specSize() //23
 
-        val scaleX = width / 50.0
+        var scaleX = width / 50.0
         val scaleY = height * 0.05
 
 
@@ -184,10 +180,30 @@ fun main() = application {
                 isTriggerOn = false
             }
 
-// ... (your existing code for kick detection continues)
+            // right now I am getting all bands.
+            // however I only want bands for the number of columns.
+            // I could say for i in 0.. columnCount, but then it wouldn't be evenly distributed.
+            // so, ...
 
+            val stepSize = (targetHighBand - targetLowBand) / columnCount
+
+            scaleX = (width / stepSize.toDouble()-gutterX*1.5)
+
+            drawer.strokeWeight = 1.0
+
+            var iterator = 0.0
+//            for (i in targetLowBand..targetHighBand step stepSize) {
+//                val bandHeight = fft.getBand(i)
+//                // Draw lines according to bandHeight
+//                drawer.lineSegment(
+//                    x0 = marginX + (iterator * scaleX), y0 = height.toDouble(),
+//                    x1 = marginX + (iterator * scaleX), y1 = (height - bandHeight * scaleY - 10.0)
+//                )
+//                iterator++
+//            }
 
             flatGrid.forEachIndexed { i, r ->
+                val bandHeight2 = fft.getBand((i % columnCount ) *stepSize)
                 drawer.pushTransforms()
                 val scaleX = r.width / bounds.width
 
@@ -197,7 +213,10 @@ fun main() = application {
                 val freqMultiplier = if (invertPeriod) -1 else 1
                 val adjustIndex = if (rowIndex == 3) 0 else if (rowIndex == 2) 1 else rowIndex
 
-                val commonSin = sin(abs(i * baseFrequency * freqMultiplier) + frameCount * globalSpeed)
+//                val commonSin = sin(abs(i * baseFrequency * freqMultiplier) + frameCount * globalSpeed)
+//                val commonSin = sin(abs(bandHeight2) + frameCount * globalSpeed)
+                val commonSin = bandHeight2.toDouble().coerceIn(0.0, 1.0) * freqMultiplier
+//                val commonSin = abs(bandHeight2.toDouble())
 
                 val scaleY: Double
                 val translateY = if (isTopPinned) {
@@ -216,14 +235,6 @@ fun main() = application {
                 drawer.popTransforms()
             }
 
-            for (i in targetLowBand..targetHighBand) {
-                val bandHeight = fft.getBand(i)
-                // Draw lines according to bandHeight
-                drawer.lineSegment(
-                    x0 = i * scaleX, y0 = height.toDouble(),
-                    x1 = i * scaleX, y1 = (height - bandHeight * scaleY)
-                )
-            }
 
 
             // THIS NEEDS TO STAY AT THE END //
