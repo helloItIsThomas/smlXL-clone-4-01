@@ -58,7 +58,7 @@ fun main() = application {
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
         var columnCount = 30//16
-        var rowCount = 2
+        var rowCount = 3
         var marginX = 10.0
         var marginY = 10.0
         var gutterX = 10.0
@@ -105,6 +105,7 @@ fun main() = application {
         }
 
         val globalSpeed = 0.0085
+        var songBPM = 133
         var baseFrequency = (2 * PI) / columnCount
         var frequency = baseFrequency / columnCount.toDouble()
 
@@ -138,12 +139,33 @@ fun main() = application {
 
         var scaleX = width / 50.0
         val scaleY = height * 0.05
+        val bandHeightMap = mutableMapOf<Int, Double>() // Declare outside the loop but within the extend block
+        val oldBandHeightMap = mutableMapOf<Int, Double>() // Declare outside the loop but within the extend block
+
+
+        var clock = 0.0
+
+
+
 
 
 //        extend(ScreenRecorder()) {
 //            frameRate = 30
 //        }
+fun exponentialEaseIn(left: Double, right: Double, t: Double): Double {
+    return if (t == 0.0) {
+        left
+    } else {
+        (right - left) * Math.pow(2.0, 10 * (t - 1)) + left
+    }
+}
+
+
+
+
         extend {
+
+
             animArr.forEachIndexed { i, a ->
 //                a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
                 a(((i * baseFrequency) * 0.15 + frameCount * globalSpeed) % loopDelay)
@@ -180,10 +202,6 @@ fun main() = application {
                 isTriggerOn = false
             }
 
-            // right now I am getting all bands.
-            // however I only want bands for the number of columns.
-            // I could say for i in 0.. columnCount, but then it wouldn't be evenly distributed.
-            // so, ...
 
             val stepSize = (targetHighBand - targetLowBand) / columnCount
 
@@ -191,19 +209,34 @@ fun main() = application {
 
             drawer.strokeWeight = 1.0
 
-            var iterator = 0.0
-//            for (i in targetLowBand..targetHighBand step stepSize) {
-//                val bandHeight = fft.getBand(i)
-//                // Draw lines according to bandHeight
-//                drawer.lineSegment(
-//                    x0 = marginX + (iterator * scaleX), y0 = height.toDouble(),
-//                    x1 = marginX + (iterator * scaleX), y1 = (height - bandHeight * scaleY - 10.0)
-//                )
-//                iterator++
-//            }
+            // when this condition fires,
+            // I want to update the bandHeight,
+            // and store the previous bandHeight.
+
+            clock = frameCount * 0.05
+
 
             flatGrid.forEachIndexed { i, r ->
-                val bandHeight2 = fft.getBand((i % columnCount ) *stepSize)
+                if((clock) % 1.0 == 0.0){
+//                if(isTriggerOn){
+                    val newBandHeight = fft.getBand((i % columnCount) * stepSize).toDouble()
+                    oldBandHeightMap[i] = bandHeightMap.getOrDefault(i, 0.0)
+                    bandHeightMap[i] = newBandHeight
+                    if(i == 0){
+//                        println("   ")
+//                        println(oldBandHeightMap[i])
+//                        println(bandHeightMap[i])
+                    }
+                }
+//                var bandHeight2 = bandHeightMap.getOrDefault(i, 0.0)
+
+                var bandHeight2 = exponentialEaseIn(
+                    oldBandHeightMap.getOrDefault(i, 0.0),
+                    bandHeightMap.getOrDefault(i, 0.0),
+                    (clock) % 1.0
+                )
+//                bandHeight2 = bandHeightMap.getOrDefault(i, 0.0)
+
                 drawer.pushTransforms()
                 val scaleX = r.width / bounds.width
 
@@ -213,12 +246,10 @@ fun main() = application {
                 val freqMultiplier = if (invertPeriod) -1 else 1
                 val adjustIndex = if (rowIndex == 3) 0 else if (rowIndex == 2) 1 else rowIndex
 
-//                val commonSin = sin(abs(i * baseFrequency * freqMultiplier) + frameCount * globalSpeed)
-//                val commonSin = sin(abs(bandHeight2) + frameCount * globalSpeed)
                 val commonSin = bandHeight2.toDouble().coerceIn(0.0, 1.0) * freqMultiplier
-//                val commonSin = abs(bandHeight2.toDouble())
 
                 val scaleY: Double
+
                 val translateY = if (isTopPinned) {
                     scaleY = (r.height / bounds.height) * commonSin.map(-1.0, 1.0, 0.0, 2.0)
                     r.y
