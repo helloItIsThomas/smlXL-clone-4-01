@@ -58,7 +58,7 @@ fun main() = application {
         mouse.moved.listen { mouseState = "move" }
 // END //////////////
         var columnCount = 30//16
-        var rowCount = 3
+        var rowCount = 4
         var marginX = 10.0
         var marginY = 10.0
         var gutterX = 10.0
@@ -84,14 +84,15 @@ fun main() = application {
         val animArr = mutableListOf<Animation>()
         val randNums = mutableListOf<Double>()
         val charArr = message.toCharArray()
-        charArr.forEach { e ->
-            randNums.add(random(0.0, 1.0))
-        }
+//        charArr.forEach { e ->
+//            randNums.add(random(0.0, 1.0))
+//        }
 
         flatGrid.forEach { g->
+            randNums.add(random(0.0, 1.0))
             animArr.add(Animation())
         }
-        val uniqueY = flatGrid.map { it.y }.distinct().sorted()
+        var uniqueY = flatGrid.map { it.y }.distinct().sorted()
 
         animArr.forEach { a ->
             a.loadFromJson(File("data/keyframes/keyframes-0.json"))
@@ -106,8 +107,6 @@ fun main() = application {
 
         val globalSpeed = 0.0085
         var songBPM = 133
-        var baseFrequency = (2 * PI) / columnCount
-        var frequency = baseFrequency / columnCount.toDouble()
 
 
         // AUDIO STUFF
@@ -128,11 +127,11 @@ fun main() = application {
 
         val tracker = ADSRTracker(this)
         tracker.attack = 0.00
-        tracker.decay = 0.55
-        tracker.sustain = 0.0
-        tracker.release = 0.4
+        tracker.decay = 0.45
+        tracker.sustain = 0.01
+        tracker.release = 0.45
         var isTriggerOn = false
-        val kickThresh = 0.75
+        val kickThresh = 0.85
 
         val targetLowBand = 0// 11
         val targetHighBand = fft.specSize() //23
@@ -152,31 +151,33 @@ fun main() = application {
 //        extend(ScreenRecorder()) {
 //            frameRate = 30
 //        }
-fun exponentialEaseIn(left: Double, right: Double, t: Double): Double {
-    return if (t == 0.0) {
-        left
+fun exponentialEaseOut(left: Double, right: Double, t: Double): Double {
+    return if (t == 1.0) {
+        right
     } else {
-        (right - left) * Math.pow(2.0, 10 * (t - 1)) + left
+        (right - left) * (-Math.pow(2.0, -10 * t) + 1) + left
     }
 }
 
 
 
 
-        extend {
 
+        extend {
 
             animArr.forEachIndexed { i, a ->
 //                a((randNums[i] * 0.3 + frameCount * globalSpeed) % loopDelay)
-                a(((i * baseFrequency) * 0.15 + frameCount * globalSpeed) % loopDelay)
+//                a(((i * 1) * 0.15 + frameCount * globalSpeed) % loopDelay)
+//                a(((i * 1) * (tracker.value()) + frameCount * globalSpeed) % loopDelay)
+                a(((randNums[i] * 0.3) * (tracker.value())) % loopDelay)
+//                a((tracker.value()) % loopDelay)
             }
             drawer.clear(ColorRGBa.BLACK)
             fft.forward(lineIn.mix)
 
             drawer.fill = null
 
-            baseFrequency = (2 * PI) / columnCount
-            frequency = baseFrequency / columnCount.toDouble()
+
             // Existing code for kick detection
             var kickSum = 0.0
             var kickCount = 0
@@ -201,6 +202,12 @@ fun exponentialEaseIn(left: Double, right: Double, t: Double): Double {
                 tracker.triggerOff()
                 isTriggerOn = false
             }
+            drawer.clear(ColorRGBa.fromVector(Vector4(
+                tracker.value().coerceIn(0.0, 1.0),
+                tracker.value().coerceIn(0.0, 1.0),
+                tracker.value().coerceIn(0.0, 1.0),
+                1.0
+            )))
 
 
             val stepSize = (targetHighBand - targetLowBand) / columnCount
@@ -230,7 +237,7 @@ fun exponentialEaseIn(left: Double, right: Double, t: Double): Double {
                 }
 //                var bandHeight2 = bandHeightMap.getOrDefault(i, 0.0)
 
-                var bandHeight2 = exponentialEaseIn(
+                var bandHeight2 = exponentialEaseOut(
                     oldBandHeightMap.getOrDefault(i, 0.0),
                     bandHeightMap.getOrDefault(i, 0.0),
                     (clock) % 1.0
@@ -246,21 +253,31 @@ fun exponentialEaseIn(left: Double, right: Double, t: Double): Double {
                 val freqMultiplier = if (invertPeriod) -1 else 1
                 val adjustIndex = if (rowIndex == 3) 0 else if (rowIndex == 2) 1 else rowIndex
 
-                val commonSin = bandHeight2.toDouble().coerceIn(0.0, 1.0) * freqMultiplier
+                val commonSin = bandHeight2.coerceIn(0.0, 1.0) * freqMultiplier
 
                 val scaleY: Double
 
                 val translateY = if (isTopPinned) {
-                    scaleY = (r.height / bounds.height) * commonSin.map(-1.0, 1.0, 0.0, 2.0)
+                    scaleY = (r.height / bounds.height) * commonSin.map(
+                        -1.0,
+                        1.0,
+                        0.0,
+                        1.5
+                    )
                     r.y
                 } else {
-                    scaleY = (r.height / bounds.height) * commonSin.map(-1.0, 1.0, 2.0, 0.0)
+                    scaleY = (r.height / bounds.height) * commonSin.map(
+                        -1.0,
+                        1.0,
+                        1.5,
+                        0.0
+                    )
                     r.y + r.height - (bounds.height * scaleY)
                 }
 
                 val commonColor = commonSin.map(-1.0, 1.0, 0.0, 1.0)
                 drawer.translate(r.x, translateY)
-                drawer.fill = ColorRGBa(commonColor, 0.0, 0.75)
+                drawer.fill = ColorRGBa(commonColor, 0.0, 0.75)//, tracker.value().map(1.0,0.0, 0.0, 1.0))
                 drawer.stroke = drawer.fill
                 drawer.shape(firstShape.shape.transform(createScaleMatrix(scaleX, scaleY)))
                 drawer.popTransforms()
