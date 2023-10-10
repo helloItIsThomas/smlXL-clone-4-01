@@ -1,6 +1,8 @@
 
 import classes.CButton
 import classes.CSlider
+import ddf.minim.AudioInput
+import ddf.minim.AudioPlayer
 import ddf.minim.Minim
 import ddf.minim.analysis.FFT
 import demos.classes.Animation
@@ -48,7 +50,7 @@ fun main() = application {
         hideCursor = true
     }
 
-    oliveProgram {
+    program {
 // MOUSE STUFF //////
         var mouseClick = false
         var mouseState = "up"
@@ -119,20 +121,22 @@ fun main() = application {
                 return FileInputStream(File(fileName))
             }
         })
-        val lineIn = minim.lineIn
+//        val lineIn: AudioInput = minim.lineIn
 
-        val fft = FFT(lineIn.bufferSize(), lineIn.sampleRate())
+        val songPlayer: AudioPlayer = minim.loadFile("data/audio/kashKrabs.mp3")
+        val fft = FFT(songPlayer.bufferSize(), songPlayer.sampleRate())
+//        val fft = FFT(lineIn.bufferSize(), lineIn.sampleRate())
         var maxKickAverage = Double.MIN_VALUE
         var minKickAverage = Double.MAX_VALUE
         var normalizedKickAverage = 0.0
 
         val tracker = ADSRTracker(this)
-        tracker.attack = 0.00
-        tracker.decay = 0.45
-        tracker.sustain = 0.01
-        tracker.release = 0.45
+        tracker.attack = 0.01
+        tracker.decay = 0.01
+        tracker.sustain = 0.25
+        tracker.release = 0.15
         var isTriggerOn = false
-        val kickThresh = 0.85
+        val kickThresh = 0.8
 
         val targetLowBand = 0// 11
         val targetHighBand = fft.specSize() //23
@@ -148,7 +152,6 @@ fun main() = application {
 
 
 
-
 //        extend(ScreenRecorder()) {
 //            frameRate = 30
 //        }
@@ -160,9 +163,7 @@ fun exponentialEaseOut(left: Double, right: Double, t: Double): Double {
     }
 }
 
-
-
-
+        songPlayer.play()
 
         extend {
 
@@ -174,7 +175,7 @@ fun exponentialEaseOut(left: Double, right: Double, t: Double): Double {
 //                a((tracker.value()) % loopDelay)
             }
             drawer.clear(ColorRGBa.BLACK)
-            fft.forward(lineIn.mix)
+            fft.forward(songPlayer.mix)
 
             drawer.fill = null
 
